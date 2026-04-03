@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createChart, ColorType, CandlestickSeries, LineSeries } from 'lightweight-charts';
-import { smcEngine } from './utils/smcEngine';
+import { analyzeSMC } from './utils/smcEngine';
 
 export const TradingChart = () => {
   const chartContainerRef = useRef<HTMLDivElement>(null);

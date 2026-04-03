@@ -1,46 +1,45 @@
-// src/utils/smcEngine.ts
-
 export interface Candle {
-  time: number;
-  open: number;
   high: number;
   low: number;
   close: number;
+  open: number;
+  time: string;
 }
 
-export interface SMCResult {
-  bos: any[];
-  choch: any[];
-  orderBlocks: any[];
-}
+export const analyzeSMC = (candles: Candle[]) => {
+  if (candles.length < 20) return null;
 
-export const smcEngine = (data: Candle[]): SMCResult => {
-  const bos: any[] = [];
-  const choch: any[] = [];
-  const orderBlocks: any[] = [];
+  // 1. Swing High va Swing Low nuqtalarini aniqlash (Stop-Loss uchun)
+  const last20 = candles.slice(-20);
+  const highPrices = last20.map(c => c.high);
+  const lowPrices = last20.map(c => c.low);
 
-  if (data.length < 5) return { bos, choch, orderBlocks };
+  const swingHigh = Math.max(...highPrices);
+  const swingLow = Math.min(...lowPrices);
 
-  // SMC Logikasi (Soddalashtirilgan mantiq)
-  for (let i = 2; i < data.length; i++) {
-    const current = data[i];
-    const prev = data[i - 1];
+  // 2. Premium/Discount (0.5 Equilibrium) hisoblash
+  const equilibrium = (swingHigh + swingLow) / 2;
+  const currentPrice = candles[candles.length - 1].close;
 
-    // BOS (Break of Structure) aniqlash
-    if (current.close > prev.high) {
-      bos.push({ time: current.time, price: current.high, type: 'BOS' });
-    }
+  // 3. Bozor holati (Market State)
+  const isDiscount = currentPrice < equilibrium;
+  const isPremium = currentPrice > equilibrium;
 
-    // CHoCH (Change of Character) aniqlash
-    if (current.close < prev.low && data[i-2].close > data[i-2].open) {
-      choch.push({ time: current.time, price: current.low, type: 'CHoCH' });
-    }
-    
-    // Order Block (OB) aniqlash
-    if (Math.abs(current.close - current.open) > (prev.high - prev.low) * 2) {
-        orderBlocks.push({ time: current.time, price: current.low, type: 'OB' });
-    }
-  }
+  // 4. Strukturaviy Stop-Loss nuqtalari (SMC bo'yicha)
+  // Buy uchun SL eng pastki Swing Lowdan 50 punkt pastroqda
+  // Sell uchun SL eng yuqori Swing Highdan 50 punkt teparoqda
+  const suggestedSLBuy = swingLow - 0.050; 
+  const suggestedSLSell = swingHigh + 0.050;
 
-  return { bos, choch, orderBlocks };
+  return {
+    currentPrice,
+    equilibrium,
+    isDiscount,
+    isPremium,
+    swingHigh,
+    swingLow,
+    suggestedSLBuy,
+    suggestedSLSell,
+    trend: candles[candles.length - 1].close > candles[candles.length - 2].close ? 'BULLISH' : 'BEARISH'
+  };
 };
