@@ -1,0 +1,5 @@
+{
+  "name": "SMC Master Trading Bot",
+  "description": "Smart Money Concepts (SMC) asosida mukammal savdo tahlili va robot dashboardi. BOS, CHoCH, FVG va Order Block tahlillari bilan.",
+  "requestFramePermissions": []
+}
