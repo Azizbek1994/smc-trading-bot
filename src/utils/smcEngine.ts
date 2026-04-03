@@ -1,61 +1,46 @@
-import { PriceData, SMCAnnotation } from '../types';
+// src/utils/smcEngine.ts
 
-export const generateMockData = (count: number = 100): PriceData[] => {
-  const data: PriceData[] = [];
-  let currentPrice = 1.1200;
-  const now = new Date();
+export interface Candle {
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+}
 
-  for (let i = 0; i < count; i++) {
-    const date = new Date(now);
-    date.setMinutes(now.getMinutes() - (count - i) * 15);
-    
-    const volatility = 0.0010;
-    const open = currentPrice;
-    const high = open + Math.random() * volatility;
-    const low = open - Math.random() * volatility;
-    const close = low + Math.random() * (high - low);
-    
-    data.push({
-      time: date.toISOString().split('T')[0] + ' ' + date.toTimeString().split(' ')[0],
-      open,
-      high,
-      low,
-      close
-    });
-    currentPrice = close;
-  }
-  return data;
-};
+export interface SMCResult {
+  bos: any[];
+  choch: any[];
+  orderBlocks: any[];
+}
 
-export const analyzeSMC = (data: PriceData[]): SMCAnnotation[] => {
-  const annotations: SMCAnnotation[] = [];
-  
-  // Simple logic to find mock BOS/CHoCH for demo
-  for (let i = 10; i < data.length - 5; i++) {
-    if (data[i].high > data[i-1].high && data[i].high > data[i+1].high) {
-      if (Math.random() > 0.8) {
-        annotations.push({
-          type: 'BOS',
-          price: data[i].high,
-          time: data[i].time,
-          label: 'BOS',
-          color: '#3b82f6'
-        });
-      }
+export const smcEngine = (data: Candle[]): SMCResult => {
+  const bos: any[] = [];
+  const choch: any[] = [];
+  const orderBlocks: any[] = [];
+
+  if (data.length < 5) return { bos, choch, orderBlocks };
+
+  // SMC Logikasi (Soddalashtirilgan mantiq)
+  for (let i = 2; i < data.length; i++) {
+    const current = data[i];
+    const prev = data[i - 1];
+
+    // BOS (Break of Structure) aniqlash
+    if (current.close > prev.high) {
+      bos.push({ time: current.time, price: current.high, type: 'BOS' });
+    }
+
+    // CHoCH (Change of Character) aniqlash
+    if (current.close < prev.low && data[i-2].close > data[i-2].open) {
+      choch.push({ time: current.time, price: current.low, type: 'CHoCH' });
     }
     
-    if (data[i].low < data[i-1].low && data[i].low < data[i+1].low) {
-      if (Math.random() > 0.9) {
-        annotations.push({
-          type: 'CHoCH',
-          price: data[i].low,
-          time: data[i].time,
-          label: 'CHoCH',
-          color: '#ef4444'
-        });
-      }
+    // Order Block (OB) aniqlash
+    if (Math.abs(current.close - current.open) > (prev.high - prev.low) * 2) {
+        orderBlocks.push({ time: current.time, price: current.low, type: 'OB' });
     }
   }
-  
-  return annotations;
+
+  return { bos, choch, orderBlocks };
 };
